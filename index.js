@@ -1,8 +1,8 @@
 import { useApi, defineInterface } from '@directus/extensions-sdk';
-import { defineComponent, reactive, computed, onMounted, watch, resolveComponent, openBlock, createElementBlock, createBlock, withCtx, createTextVNode, toDisplayString, unref, Fragment, renderList, createElementVNode, createVNode, createCommentVNode } from 'vue';
+import { defineComponent, reactive, computed, onMounted, watch, resolveComponent, openBlock, createElementBlock, createBlock, withCtx, createTextVNode, toDisplayString, unref, createCommentVNode, Fragment, renderList, createElementVNode, createVNode } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const _hoisted_1 = { key: 1 };
+const _hoisted_1 = { key: 2 };
 const _hoisted_2 = ["onClick"];
 const _hoisted_3 = { class: "label" };
 const _hoisted_4 = {
@@ -16,14 +16,15 @@ var script = /* @__PURE__ */ defineComponent({
     source: { type: String, required: false }
   },
   emits: ["input"],
-  setup(__props, { emit: $emit }) {
-    const $props = __props;
+  setup(__props, { emit }) {
+    const props = __props;
     const api = useApi();
     const { t } = useI18n();
     const payload = reactive({
       selecteds: []
     });
     const view = reactive({
+      loaded: false,
       items: [],
       options: computed(() => {
         return view.items.filter((item) => item.text).map((item) => ({
@@ -38,24 +39,25 @@ var script = /* @__PURE__ */ defineComponent({
       refreshModel();
     });
     watch(
-      () => $props.value,
+      () => props.value,
       () => {
         refreshModel();
       }
     );
     function refreshModel() {
-      if ($props.value instanceof Array) {
-        const val = [...$props.value || []];
+      if (props.value instanceof Array) {
+        const val = [...props.value || []];
         payload.selecteds = val;
       }
     }
     async function fetch() {
-      if (!$props.source) {
+      if (!props.source) {
         return;
       }
-      const collection = $props.source;
+      const collection = props.source;
       const res = await api.get(`items/${collection}/?limit=-1`);
       view.items = res.data.data;
+      view.loaded = true;
     }
     function toggleSelectItem(item) {
       const index = payload.selecteds.indexOf(item.value);
@@ -64,7 +66,7 @@ var script = /* @__PURE__ */ defineComponent({
       } else {
         payload.selecteds.splice(index, 1);
       }
-      $emit("input", payload.selecteds);
+      emit("input", payload.selecteds);
     }
     function getIconName(item) {
       return payload.selecteds.indexOf(item.value) === -1 ? "radio_button_unchecked" : "radio_button_checked";
@@ -76,13 +78,24 @@ var script = /* @__PURE__ */ defineComponent({
       const _component_v_notice = resolveComponent("v-notice");
       const _component_v_icon = resolveComponent("v-icon");
       return openBlock(), createElementBlock("div", null, [
-        !view.options || view.options.length === 0 ? (openBlock(), createBlock(_component_v_notice, {
+        !props.source ? (openBlock(), createBlock(_component_v_notice, {
           key: 0,
           type: "warning"
         }, {
           default: withCtx(() => [
             createTextVNode(
               toDisplayString(unref(t)("relationship_not_setup")),
+              1
+              /* TEXT */
+            )
+          ]),
+          _: 1
+          /* STABLE */
+        })) : createCommentVNode("v-if", true),
+        view.loaded && (!view.options || view.options.length === 0) ? (openBlock(), createBlock(_component_v_notice, { key: 1 }, {
+          default: withCtx(() => [
+            createTextVNode(
+              toDisplayString(unref(t)("no_items")),
               1
               /* TEXT */
             )

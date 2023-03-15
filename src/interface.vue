@@ -1,8 +1,14 @@
 <template>
   <div>
-    <template v-if="!view.options || view.options.length === 0">
+    <template v-if="!props.source">
       <v-notice type="warning">
         {{ t('relationship_not_setup') }}
+      </v-notice>
+    </template>
+
+    <template v-if="view.loaded && (!view.options || view.options.length === 0)">
+      <v-notice>
+        {{ t('no_items') }}
       </v-notice>
     </template>
 
@@ -43,18 +49,20 @@ type CollectionItem = Partial<OptionItem>
 const api = useApi()
 const { t } = useI18n()
 
-const $emit = defineEmits<{
+const emit = defineEmits<{
   (event: 'input', value: string[]): void
 }>()
 
-const $props = defineProps<Props>()
+const props = defineProps<Props>()
 
 const payload = reactive({
   selecteds: [] as string[],
 })
 
 const view = reactive({
+  loaded: false,
   items: [] as CollectionItem[],
+
   options: computed((): OptionItem[] => {
     return view.items
       .filter((item) => item.text)
@@ -72,27 +80,28 @@ onMounted(() => {
 })
 
 watch(
-  () => $props.value,
+  () => props.value,
   () => {
     refreshModel()
   }
 )
 
 function refreshModel() {
-  if ($props.value instanceof Array) {
-    const val = [...($props.value || [])]
+  if (props.value instanceof Array) {
+    const val = [...(props.value || [])]
     payload.selecteds = val
   }
 }
 
 async function fetch() {
-  if (!$props.source) {
+  if (!props.source) {
     return
   }
 
-  const collection = $props.source
+  const collection = props.source
   const res = await api.get<{ data: CollectionItem[] }>(`items/${collection}/?limit=-1`)
   view.items = res.data.data
+  view.loaded = true
 }
 
 function toggleSelectItem(item: OptionItem) {
@@ -105,7 +114,7 @@ function toggleSelectItem(item: OptionItem) {
   }
 
   // emit the new value
-  $emit('input', payload.selecteds)
+  emit('input', payload.selecteds)
 }
 
 function getIconName(item: OptionItem) {
